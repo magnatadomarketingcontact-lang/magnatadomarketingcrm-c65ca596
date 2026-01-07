@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Bell, X, AlertTriangle, Calendar, User, Stethoscope } from 'lucide-react';
 import { usePatients } from '@/contexts/PatientContext';
 import { Patient, PROCEDURE_LABELS } from '@/types/patient';
@@ -15,12 +15,48 @@ interface Notification {
 // Horários de notificação (HH:MM)
 const NOTIFICATION_TIMES = ['08:00', '09:30', '13:00', '15:00', '16:00', '19:00'];
 
+// Função para tocar som de alerta usando Web Audio API
+const playAlertSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Sequência de beeps para chamar atenção
+    const playBeep = (startTime: number, frequency: number, duration: number) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+    };
+    
+    const now = audioContext.currentTime;
+    
+    // 3 beeps crescentes
+    playBeep(now, 523.25, 0.15);        // Dó
+    playBeep(now + 0.2, 659.25, 0.15);  // Mi
+    playBeep(now + 0.4, 783.99, 0.25);  // Sol
+    
+  } catch (error) {
+    console.log('Áudio não suportado:', error);
+  }
+};
+
 export function NotificationBanner() {
   const { patients } = usePatients();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [showModal, setShowModal] = useState(false);
   const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
+  const hasPlayedSound = useRef(false);
 
   const checkNotifications = useCallback(() => {
     const now = new Date();
@@ -62,6 +98,14 @@ export function NotificationBanner() {
       setNotifications(unseenNotifications);
       setCurrentNotification(unseenNotifications[0]);
       setShowModal(true);
+      
+      // Toca som de alerta
+      if (!hasPlayedSound.current) {
+        playAlertSound();
+        hasPlayedSound.current = true;
+        // Reset após 2 minutos para permitir som no próximo horário
+        setTimeout(() => { hasPlayedSound.current = false; }, 120000);
+      }
     }
   }, [patients, dismissed]);
 
