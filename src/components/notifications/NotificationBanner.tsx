@@ -58,6 +58,35 @@ export function NotificationBanner() {
   const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
   const hasPlayedSound = useRef(false);
 
+  // Função para forçar teste de notificação
+  const forceTestNotification = useCallback(() => {
+    const now = new Date();
+    const tomorrow = addDays(startOfDay(now), 1);
+    
+    // Busca pacientes com consulta para amanhã
+    const upcomingAppointments = patients.filter(patient => {
+      if (patient.status !== 'agendado') return false;
+      const appointmentDate = startOfDay(parseISO(patient.appointmentDate));
+      return isEqual(appointmentDate, tomorrow);
+    });
+
+    if (upcomingAppointments.length === 0) {
+      alert('Nenhum paciente com consulta agendada para amanhã!');
+      return;
+    }
+
+    const testNotifications: Notification[] = upcomingAppointments.map(patient => ({
+      id: `${patient.id}-test-${Date.now()}`,
+      patient,
+      triggeredAt: format(now, 'HH:mm'),
+    }));
+
+    setNotifications(testNotifications);
+    setCurrentNotification(testNotifications[0]);
+    setShowModal(true);
+    playAlertSound();
+  }, [patients]);
+
   const checkNotifications = useCallback(() => {
     const now = new Date();
     const today = startOfDay(now);
@@ -143,6 +172,19 @@ export function NotificationBanner() {
 
   return (
     <>
+      {/* Botão de Teste (temporário) */}
+      {!showModal && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <button
+            onClick={forceTestNotification}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-warning text-warning-foreground font-medium shadow-lg hover:opacity-90 transition-opacity"
+          >
+            <Bell className="h-4 w-4" />
+            Testar Notificação
+          </button>
+        </div>
+      )}
+
       {/* Banner no topo */}
       {visibleBannerNotifications.length > 0 && !showModal && (
         <div className="p-4">
