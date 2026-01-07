@@ -13,10 +13,38 @@ const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'magnata_crm_patients';
 
+// Função para criar paciente de teste com consulta para amanhã
+const createTestPatient = (): Patient => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const now = new Date().toISOString();
+  
+  return {
+    id: 'test-patient-tomorrow',
+    name: 'Maria Silva (TESTE)',
+    phone: '11999999999',
+    contactDate: new Date().toISOString().split('T')[0],
+    appointmentDate: tomorrow.toISOString().split('T')[0],
+    status: 'agendado',
+    mediaOrigin: 'instagram',
+    procedures: ['protese_total', 'protese_flexivel'],
+    observations: 'Paciente de teste para verificar notificações',
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
 export function PatientProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const existingPatients: Patient[] = stored ? JSON.parse(stored) : [];
+    
+    // Adiciona paciente de teste se não existir
+    const hasTestPatient = existingPatients.some(p => p.id === 'test-patient-tomorrow');
+    if (!hasTestPatient) {
+      return [...existingPatients, createTestPatient()];
+    }
+    return existingPatients;
   });
 
   useEffect(() => {
