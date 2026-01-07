@@ -8,11 +8,11 @@ import {
   CheckCircle,
   Users,
   FileSpreadsheet,
-  Crown,
   Menu,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import logoMagnata from '@/assets/logo-magnata.jpeg';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -53,9 +53,11 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
           {/* Logo */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary shadow-glow">
-                <Crown className="h-6 w-6 text-primary-foreground" />
-              </div>
+              <img 
+                src={logoMagnata} 
+                alt="Magnata Logo" 
+                className="h-10 w-10 rounded-lg object-cover"
+              />
               <div>
                 <h1 className="text-lg font-bold text-sidebar-foreground">MAGNATA</h1>
                 <p className="text-xs text-sidebar-foreground/60">DO CRM</p>
@@ -120,9 +122,11 @@ export function MobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
         <Menu className="h-6 w-6" />
       </button>
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-          <Crown className="h-4 w-4 text-primary-foreground" />
-        </div>
+        <img 
+          src={logoMagnata} 
+          alt="Magnata Logo" 
+          className="h-8 w-8 rounded-lg object-cover"
+        />
         <span className="font-bold text-foreground">MAGNATA DO CRM</span>
       </div>
     </header>
