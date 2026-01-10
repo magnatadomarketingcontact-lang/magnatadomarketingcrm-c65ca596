@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      patients: {
+        Row: {
+          appointment_date: string
+          closed_value: number | null
+          contact_date: string
+          created_at: string
+          id: string
+          media_origin: Database["public"]["Enums"]["media_origin"]
+          name: string
+          observations: string | null
+          phone: string
+          procedures: Database["public"]["Enums"]["procedure_type"][]
+          status: Database["public"]["Enums"]["patient_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appointment_date: string
+          closed_value?: number | null
+          contact_date: string
+          created_at?: string
+          id?: string
+          media_origin: Database["public"]["Enums"]["media_origin"]
+          name: string
+          observations?: string | null
+          phone: string
+          procedures?: Database["public"]["Enums"]["procedure_type"][]
+          status?: Database["public"]["Enums"]["patient_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appointment_date?: string
+          closed_value?: number | null
+          contact_date?: string
+          created_at?: string
+          id?: string
+          media_origin?: Database["public"]["Enums"]["media_origin"]
+          name?: string
+          observations?: string | null
+          phone?: string
+          procedures?: Database["public"]["Enums"]["procedure_type"][]
+          status?: Database["public"]["Enums"]["patient_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +70,18 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      media_origin: "facebook" | "instagram" | "indicacao" | "guia_campanha"
+      patient_status:
+        | "agendado"
+        | "veio"
+        | "nao_veio"
+        | "sem_interesse"
+        | "fechado"
+      procedure_type:
+        | "protese_flexivel"
+        | "protese_total"
+        | "protese_ppr"
+        | "protese_ppr_mista"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +208,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      media_origin: ["facebook", "instagram", "indicacao", "guia_campanha"],
+      patient_status: [
+        "agendado",
+        "veio",
+        "nao_veio",
+        "sem_interesse",
+        "fechado",
+      ],
+      procedure_type: [
+        "protese_flexivel",
+        "protese_total",
+        "protese_ppr",
+        "protese_ppr_mista",
+      ],
+    },
   },
 } as const
