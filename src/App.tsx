@@ -55,65 +55,71 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AppRoutes() {
+  return (
+    <PatientProvider>
+      <Routes>
+        <Route path="/auth" element={
+          <AuthRoute>
+            <Auth />
+          </AuthRoute>
+        } />
+        <Route path="/" element={
+          <ProtectedRoute>
+            <AppLayout><Index /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/pacientes/novo" element={
+          <ProtectedRoute>
+            <AppLayout><NewPatient /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/pacientes/:id" element={
+          <ProtectedRoute>
+            <AppLayout><EditPatient /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/agendamentos" element={
+          <ProtectedRoute>
+            <AppLayout><Appointments /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/fechados" element={
+          <ProtectedRoute>
+            <AppLayout><ClosedDeals /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/sem-interesse" element={
+          <ProtectedRoute>
+            <AppLayout><NoInterest /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/contatos" element={
+          <ProtectedRoute>
+            <AppLayout><AllContacts /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/exportar" element={
+          <ProtectedRoute>
+            <AppLayout><Export /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </PatientProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
-        <PatientProvider>
-          <Toaster />
-          <Sonner position="top-right" richColors />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth" element={
-                <AuthRoute>
-                  <Auth />
-                </AuthRoute>
-              } />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <AppLayout><Index /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/pacientes/novo" element={
-                <ProtectedRoute>
-                  <AppLayout><NewPatient /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/pacientes/:id" element={
-                <ProtectedRoute>
-                  <AppLayout><EditPatient /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/agendamentos" element={
-                <ProtectedRoute>
-                  <AppLayout><Appointments /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/fechados" element={
-                <ProtectedRoute>
-                  <AppLayout><ClosedDeals /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/sem-interesse" element={
-                <ProtectedRoute>
-                  <AppLayout><NoInterest /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/contatos" element={
-                <ProtectedRoute>
-                  <AppLayout><AllContacts /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/exportar" element={
-                <ProtectedRoute>
-                  <AppLayout><Export /></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </PatientProvider>
-      </AuthProvider>
+      <Toaster />
+      <Sonner position="top-right" richColors />
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
