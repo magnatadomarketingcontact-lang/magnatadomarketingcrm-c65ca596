@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -10,8 +9,10 @@ import {
   FileSpreadsheet,
   Menu,
   X,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import logoMagnata from '@/assets/logo-magnata.jpeg';
 
 const navItems = [
@@ -30,6 +31,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const location = useLocation();
+  const { signOut, user } = useAuth();
 
   return (
     <>
@@ -95,8 +97,8 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
             })}
           </nav>
 
-          {/* Export Button */}
-          <div className="border-t border-sidebar-border p-4">
+          {/* Export Button & User Info */}
+          <div className="border-t border-sidebar-border p-4 space-y-3">
             <NavLink
               to="/exportar"
               onClick={onClose}
@@ -105,6 +107,21 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
               <FileSpreadsheet className="h-4 w-4" />
               Exportar Excel
             </NavLink>
+            
+            {user && (
+              <div className="space-y-2">
+                <p className="text-xs text-sidebar-foreground/60 truncate px-1">
+                  {user.email}
+                </p>
+                <button
+                  onClick={signOut}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border px-4 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
