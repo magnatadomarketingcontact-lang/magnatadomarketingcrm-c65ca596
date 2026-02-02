@@ -3,7 +3,7 @@ import { Patient, PatientStatus, MediaOrigin, ProcedureType } from '@/types/pati
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
-
+import { getPatientErrorMessage } from '@/lib/errorUtils';
 interface PatientContextType {
   patients: Patient[];
   isLoading: boolean;
@@ -59,9 +59,9 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       setPatients((data || []).map(mapDbToPatient));
-    } catch (error: any) {
-      console.error('Error fetching patients:', error);
-      toast.error('Erro ao carregar pacientes');
+    } catch (error: unknown) {
+      if (import.meta.env.DEV) console.error('Error fetching patients:', error);
+      toast.error(getPatientErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -95,9 +95,9 @@ export function PatientProvider({ children }: { children: ReactNode }) {
 
       setPatients(prev => [mapDbToPatient(data), ...prev]);
       toast.success('Paciente adicionado com sucesso!');
-    } catch (error: any) {
-      console.error('Error adding patient:', error);
-      toast.error('Erro ao adicionar paciente');
+    } catch (error: unknown) {
+      if (import.meta.env.DEV) console.error('Error adding patient:', error);
+      toast.error(getPatientErrorMessage(error));
       throw error;
     }
   };
@@ -133,9 +133,9 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         prev.map(p => (p.id === id ? mapDbToPatient(data) : p))
       );
       toast.success('Paciente atualizado com sucesso!');
-    } catch (error: any) {
-      console.error('Error updating patient:', error);
-      toast.error('Erro ao atualizar paciente');
+    } catch (error: unknown) {
+      if (import.meta.env.DEV) console.error('Error updating patient:', error);
+      toast.error(getPatientErrorMessage(error));
       throw error;
     }
   };
@@ -156,9 +156,9 @@ export function PatientProvider({ children }: { children: ReactNode }) {
 
       setPatients(prev => prev.filter(p => p.id !== id));
       toast.success('Paciente removido com sucesso!');
-    } catch (error: any) {
-      console.error('Error deleting patient:', error);
-      toast.error('Erro ao remover paciente');
+    } catch (error: unknown) {
+      if (import.meta.env.DEV) console.error('Error deleting patient:', error);
+      toast.error(getPatientErrorMessage(error));
       throw error;
     }
   };
