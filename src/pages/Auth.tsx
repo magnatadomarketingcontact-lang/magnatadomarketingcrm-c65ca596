@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logoMagnata from '@/assets/logo-magnata.jpeg';
+import { getAuthErrorMessage } from '@/lib/errorUtils';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -30,14 +31,14 @@ export default function Auth() {
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(getAuthErrorMessage(error));
       } else {
         toast.success('Conta criada com sucesso! Você já pode fazer login.');
         setEmail('');
         setPassword('');
       }
-    } catch (error) {
-      toast.error('Erro ao criar conta');
+    } catch (error: unknown) {
+      toast.error(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -54,13 +55,13 @@ export default function Auth() {
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(getAuthErrorMessage(error));
       } else {
         toast.success('Login realizado com sucesso!');
         navigate('/');
       }
-    } catch (error) {
-      toast.error('Erro ao fazer login');
+    } catch (error: unknown) {
+      toast.error(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -82,13 +83,13 @@ export default function Auth() {
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(getAuthErrorMessage(error));
       } else {
         toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
         setShowForgotPassword(false);
       }
-    } catch (error) {
-      toast.error('Erro ao enviar email de recuperação');
+    } catch (error: unknown) {
+      toast.error(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
