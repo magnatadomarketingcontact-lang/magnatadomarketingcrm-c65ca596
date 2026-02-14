@@ -255,7 +255,7 @@ export default function Auth() {
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 <Instagram className="h-4 w-4" />
-                nome: @guilherme__magnata
+                @guilherme__magnata
               </a>
             </div>
           </div>
