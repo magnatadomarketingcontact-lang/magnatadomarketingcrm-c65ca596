@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Instagram } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -237,7 +237,7 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 text-center space-y-3">
+          <div className="mt-6 text-center">
             <a
               href="https://wa.me/+5585991778762"
               target="_blank"
@@ -247,17 +247,6 @@ export default function Auth() {
               <MessageCircle className="h-4 w-4" />
               Suporte Técnico
             </a>
-            <div>
-              <a
-                href="https://www.instagram.com/guilherme__magnata/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Instagram className="h-4 w-4" />
-                @guilherme__magnata
-              </a>
-            </div>
           </div>
         </CardContent>
       </Card>
