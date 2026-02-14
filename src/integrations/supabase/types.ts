@@ -62,6 +62,50 @@ export type Database = {
         }
         Relationships: []
       }
+      reminder_logs: {
+        Row: {
+          appointment_date: string
+          created_at: string
+          error_message: string | null
+          id: string
+          message_type: string
+          patient_id: string
+          sent_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          appointment_date: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_type?: string
+          patient_id: string
+          sent_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          appointment_date?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_type?: string
+          patient_id?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_logs_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
