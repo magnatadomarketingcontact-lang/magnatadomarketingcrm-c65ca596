@@ -22,16 +22,24 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Get tomorrow's date
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const tomorrowStr = tomorrow.toISOString().split('T')[0]
+    // Accept optional date parameter, default to tomorrow
+    const url = new URL(req.url)
+    const dateParam = url.searchParams.get('date')
+    let targetDate: string
+
+    if (dateParam) {
+      targetDate = dateParam
+    } else {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      targetDate = tomorrow.toISOString().split('T')[0]
+    }
 
     // Find patients with appointments tomorrow that haven't been reminded
     const { data: patients, error: fetchError } = await supabase
       .from('patients')
       .select('id, name, phone, appointment_date, user_id, status')
-      .eq('appointment_date', tomorrowStr)
+      .eq('appointment_date', targetDate)
       .in('status', ['agendado', 'veio'])
 
     if (fetchError) throw fetchError
@@ -48,7 +56,7 @@ Deno.serve(async (req) => {
       .from('reminder_logs')
       .select('patient_id')
       .in('patient_id', patientIds)
-      .eq('appointment_date', tomorrowStr)
+      .eq('appointment_date', targetDate)
       .eq('status', 'sent')
 
     const alreadySent = new Set((existingLogs || []).map(l => l.patient_id))
@@ -62,7 +70,7 @@ Deno.serve(async (req) => {
       if (phone.startsWith('0')) phone = phone.slice(1)
       if (!phone.startsWith('55')) phone = '55' + phone
 
-      const message = `Olá ${patient.name}! 😊\n\nLembramos que você tem uma consulta agendada para amanhã (${new Date(tomorrowStr).toLocaleDateString('pt-BR')}).\n\nCaso precise reagendar, entre em contato conosco.\n\nAguardamos você! 🦷`
+      const message = `Olá ${patient.name}! 😊\n\nLembramos que você tem uma consulta agendada para o dia ${new Date(targetDate + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nCaso precise reagendar, entre em contato conosco.\n\nAguardamos você! 🦷`
 
       try {
         // Send via Z-API
@@ -88,7 +96,7 @@ Deno.serve(async (req) => {
         await supabase.from('reminder_logs').insert({
           patient_id: patient.id,
           user_id: patient.user_id,
-          appointment_date: tomorrowStr,
+          appointment_date: targetDate,
           status: 'sent',
           message_type: 'whatsapp',
         })
@@ -101,7 +109,7 @@ Deno.serve(async (req) => {
         await supabase.from('reminder_logs').insert({
           patient_id: patient.id,
           user_id: patient.user_id,
-          appointment_date: tomorrowStr,
+          appointment_date: targetDate,
           status: 'failed',
           message_type: 'whatsapp',
           error_message: errorMsg,
