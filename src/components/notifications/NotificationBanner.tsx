@@ -180,7 +180,7 @@ export function NotificationBanner() {
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-warning text-warning-foreground font-medium shadow-lg hover:opacity-90 transition-opacity"
           >
             <Bell className="h-4 w-4" />
-            Testar Notificação
+            Notificações
           </button>
         </div>
       )}
