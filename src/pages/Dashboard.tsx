@@ -3,8 +3,10 @@ import { usePatients } from '@/contexts/PatientContext';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { DashboardCharts } from '@/components/dashboard/DashboardCharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, Users, TrendingUp, CheckCircle, Calendar, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DollarSign, Users, TrendingUp, CheckCircle, Calendar, Filter, FileText } from 'lucide-react';
 import { startOfDay, startOfWeek, startOfMonth, startOfYear, endOfMonth, isAfter, isBefore, parseISO } from 'date-fns';
+import { generatePdfReport } from '@/lib/generatePdfReport';
 
 type PeriodFilter = 'all' | 'day' | 'week' | 'month' | 'year_month';
 
@@ -92,6 +94,30 @@ export default function Dashboard() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  const getPeriodLabel = () => {
+    if (period === 'all') return 'Todo período';
+    if (period === 'day') return 'Hoje';
+    if (period === 'week') return 'Esta semana';
+    if (period === 'month') return 'Este mês';
+    if (period === 'year_month') {
+      const yearLabel = selectedYear || '';
+      const monthLabel = selectedMonth && selectedMonth !== 'all_months'
+        ? MONTHS.find(m => m.value === selectedMonth)?.label || ''
+        : 'Todos os meses';
+      return `${monthLabel} / ${yearLabel}`;
+    }
+    return 'Todo período';
+  };
+
+  const handleExportPdf = () => {
+    generatePdfReport({
+      patients: filteredPatients,
+      periodLabel: getPeriodLabel(),
+      includePatientList: true,
+      includeObservations: true,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -101,6 +127,10 @@ export default function Dashboard() {
           <p className="text-muted-foreground">Acompanhe o desempenho do seu laboratório</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={handleExportPdf} variant="outline" size="sm" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Exportar PDF
+          </Button>
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select
             value={period}
