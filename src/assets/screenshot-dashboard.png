@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;</script>
+
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MAGNATA DO CRM - Gestão de Laboratório de Próteses</title>
+    <meta name="description" content="Sistema CRM completo para gestão de laboratórios de próteses odontológicas. Controle de pacientes, agendamentos e faturamento." />
+    <meta name="author" content="MAGNATA DO CRM" />
+
+    <meta property="og:title" content="MAGNATA DO CRM" />
+    <meta property="og:description" content="Sistema CRM para laboratórios de próteses odontológicas" />
+    <meta property="og:type" content="website" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+
+  <body>
+    <div id="root"></div><script src="https://cdn.gpteng.co/lovable.js" type="module"></script>
+    <script type="module" src="/src/main.tsx?t=1771471759652"></script>
+  </body>
+</html>
