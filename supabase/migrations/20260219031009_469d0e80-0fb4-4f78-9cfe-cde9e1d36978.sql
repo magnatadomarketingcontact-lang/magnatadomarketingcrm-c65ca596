@@ -1,0 +1,1 @@
+ALTER TABLE public.patients ADD COLUMN appointment_time text DEFAULT null;

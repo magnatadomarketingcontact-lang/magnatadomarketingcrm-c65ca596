@@ -23,6 +23,7 @@ export interface Patient {
   phone: string;
   contactDate: string;
   appointmentDate: string;
+  appointmentTime?: string;
   status: PatientStatus;
   closedValue?: number;
   mediaOrigin: MediaOrigin;

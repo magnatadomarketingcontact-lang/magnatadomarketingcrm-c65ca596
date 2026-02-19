@@ -22,6 +22,7 @@ const mapDbToPatient = (row: any): Patient => ({
   phone: row.phone,
   contactDate: row.contact_date,
   appointmentDate: row.appointment_date,
+  appointmentTime: row.appointment_time || undefined,
   status: row.status as PatientStatus,
   closedValue: row.closed_value ? Number(row.closed_value) : undefined,
   mediaOrigin: row.media_origin as MediaOrigin,
@@ -82,6 +83,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
           phone: patientData.phone,
           contact_date: patientData.contactDate,
           appointment_date: patientData.appointmentDate,
+          appointment_time: patientData.appointmentTime || null,
           status: patientData.status,
           closed_value: patientData.closedValue || null,
           media_origin: patientData.mediaOrigin,
@@ -114,6 +116,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       if (updates.phone !== undefined) updateData.phone = updates.phone;
       if (updates.contactDate !== undefined) updateData.contact_date = updates.contactDate;
       if (updates.appointmentDate !== undefined) updateData.appointment_date = updates.appointmentDate;
+      if (updates.appointmentTime !== undefined) updateData.appointment_time = updates.appointmentTime;
       if (updates.status !== undefined) updateData.status = updates.status;
       if (updates.closedValue !== undefined) updateData.closed_value = updates.closedValue;
       if (updates.mediaOrigin !== undefined) updateData.media_origin = updates.mediaOrigin;

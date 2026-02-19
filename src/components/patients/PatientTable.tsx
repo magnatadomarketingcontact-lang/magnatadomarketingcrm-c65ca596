@@ -171,7 +171,14 @@ export function PatientTable({ patients, title, icon, showFilters = true }: Pati
                       </a>
                     </TableCell>
                     <TableCell>
-                      {format(parseISO(patient.appointmentDate), "dd/MM/yyyy", { locale: ptBR })}
+                      <div>
+                        {format(parseISO(patient.appointmentDate), "dd/MM/yyyy", { locale: ptBR })}
+                        {patient.appointmentTime && (
+                          <span className="ml-1 text-muted-foreground text-xs">
+                            às {patient.appointmentTime}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn('font-medium', statusColors[patient.status])}>
