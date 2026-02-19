@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { FileSpreadsheet, Download, Filter } from 'lucide-react';
+import { FileSpreadsheet, Download, Filter, FileText } from 'lucide-react';
+import { generatePdfReport } from '@/lib/generatePdfReport';
 import { toast } from 'sonner';
 import { STATUS_LABELS, MEDIA_LABELS, PROCEDURE_LABELS, PatientStatus, MediaOrigin } from '@/types/patient';
 import { format, parseISO } from 'date-fns';
@@ -152,6 +153,21 @@ export default function Export() {
           >
             <Download className="mr-2 h-4 w-4" />
             Exportar para CSV/Excel
+          </Button>
+
+          <Button
+            onClick={() => generatePdfReport({
+              patients: filteredPatients,
+              periodLabel: `${statusFilter === 'all' ? 'Todos os status' : STATUS_LABELS[statusFilter as PatientStatus]} / ${mediaFilter === 'all' ? 'Todas as mídias' : MEDIA_LABELS[mediaFilter as MediaOrigin]}`,
+              includePatientList: true,
+              includeObservations,
+            })}
+            variant="outline"
+            className="w-full gap-2"
+            disabled={filteredPatients.length === 0}
+          >
+            <FileText className="h-4 w-4" />
+            Exportar para PDF
           </Button>
         </CardContent>
       </Card>
