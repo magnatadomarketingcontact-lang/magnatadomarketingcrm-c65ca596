@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Bell, X, AlertTriangle, Calendar, User, Stethoscope } from 'lucide-react';
+import { Bell, X, AlertTriangle, Calendar, Clock, User, Stethoscope } from 'lucide-react';
 import { usePatients } from '@/contexts/PatientContext';
 import { Patient, PROCEDURE_LABELS } from '@/types/patient';
 import { format, addDays, isEqual, parseISO, startOfDay } from 'date-fns';
@@ -263,10 +263,23 @@ export function NotificationBanner() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Calendar className="h-6 w-6 text-primary" />
                   </div>
+                   <div>
+                     <p className="text-sm text-muted-foreground">Data da Consulta</p>
+                     <p className="text-xl font-bold text-foreground">
+                       {format(parseISO(currentNotification.patient.appointmentDate), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                     </p>
+                   </div>
+                 </div>
+
+                {/* Horário */}
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Data da Consulta</p>
+                    <p className="text-sm text-muted-foreground">Horário da Consulta</p>
                     <p className="text-xl font-bold text-foreground">
-                      {format(parseISO(currentNotification.patient.appointmentDate), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      {currentNotification.patient.appointmentTime || 'Não informado'}
                     </p>
                   </div>
                 </div>
