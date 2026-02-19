@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { FileSpreadsheet, Download, Filter, FileText, Presentation } from 'lucide-react';
+import { FileSpreadsheet, Download, Filter, FileText } from 'lucide-react';
 import { generatePdfReport } from '@/lib/generatePdfReport';
-import { generatePdfSlides } from '@/lib/generatePdfSlides';
 import { toast } from 'sonner';
 import { STATUS_LABELS, MEDIA_LABELS, PROCEDURE_LABELS, PatientStatus, MediaOrigin } from '@/types/patient';
 import { format, parseISO } from 'date-fns';
@@ -169,24 +168,6 @@ export default function Export() {
           >
             <FileText className="h-4 w-4" />
             Exportar para PDF
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Apresentação</span>
-            </div>
-          </div>
-
-          <Button
-            onClick={() => generatePdfSlides()}
-            variant="outline"
-            className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
-          >
-            <Presentation className="h-4 w-4" />
-            Baixar Apresentação do Sistema (PDF Slides)
           </Button>
         </CardContent>
       </Card>
