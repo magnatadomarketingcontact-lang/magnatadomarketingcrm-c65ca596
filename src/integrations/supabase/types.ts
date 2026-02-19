@@ -17,6 +17,7 @@ export type Database = {
       patients: {
         Row: {
           appointment_date: string
+          appointment_time: string | null
           closed_value: number | null
           contact_date: string
           created_at: string
@@ -32,6 +33,7 @@ export type Database = {
         }
         Insert: {
           appointment_date: string
+          appointment_time?: string | null
           closed_value?: number | null
           contact_date: string
           created_at?: string
@@ -47,6 +49,7 @@ export type Database = {
         }
         Update: {
           appointment_date?: string
+          appointment_time?: string | null
           closed_value?: number | null
           contact_date?: string
           created_at?: string

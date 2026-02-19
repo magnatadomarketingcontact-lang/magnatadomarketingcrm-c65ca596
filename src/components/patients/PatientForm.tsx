@@ -23,6 +23,7 @@ export function PatientForm() {
     phone: '',
     contactDate: '',
     appointmentDate: '',
+    appointmentTime: '',
     status: 'agendado' as PatientStatus,
     closedValue: '',
     mediaOrigin: 'instagram' as MediaOrigin,
@@ -39,6 +40,7 @@ export function PatientForm() {
           phone: patient.phone,
           contactDate: patient.contactDate,
           appointmentDate: patient.appointmentDate,
+          appointmentTime: patient.appointmentTime || '',
           status: patient.status,
           closedValue: patient.closedValue?.toString() || '',
           mediaOrigin: patient.mediaOrigin,
@@ -67,6 +69,7 @@ export function PatientForm() {
       phone: formData.phone,
       contactDate: formData.contactDate,
       appointmentDate: formData.appointmentDate,
+      appointmentTime: formData.appointmentTime || undefined,
       status: formData.status,
       closedValue: formData.status === 'fechado' ? parseFloat(formData.closedValue) || 0 : undefined,
       mediaOrigin: formData.mediaOrigin,
@@ -140,7 +143,7 @@ export function PatientForm() {
             </div>
 
             {/* Datas */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="contactDate">Data do Contato *</Label>
                 <Input
@@ -158,6 +161,16 @@ export function PatientForm() {
                   type="date"
                   value={formData.appointmentDate}
                   onChange={e => setFormData(prev => ({ ...prev, appointmentDate: e.target.value }))}
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="appointmentTime">Horário do Agendamento</Label>
+                <Input
+                  id="appointmentTime"
+                  type="time"
+                  value={formData.appointmentTime}
+                  onChange={e => setFormData(prev => ({ ...prev, appointmentTime: e.target.value }))}
                   className="bg-background"
                 />
               </div>
