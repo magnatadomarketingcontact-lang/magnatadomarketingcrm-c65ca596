@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PatientProvider } from "@/contexts/PatientContext";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NewPatient from "./pages/NewPatient";
 import EditPatient from "./pages/EditPatient";
@@ -16,8 +18,16 @@ import AllContacts from "./pages/AllContacts";
 import Export from "./pages/Export";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import { toast } from 'sonner';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -51,6 +61,22 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   if (user) {
     return <Navigate to="/" replace />;
   }
+
+  return <>{children}</>;
+}
+
+function GlobalUnhandledRejectionHandler({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      if (import.meta.env.DEV) {
+        console.error('[Unhandled Rejection]', event.reason);
+      }
+      toast.error('Ocorreu um erro inesperado. Tente novamente.');
+      event.preventDefault();
+    };
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => window.removeEventListener('unhandledrejection', handleRejection);
+  }, []);
 
   return <>{children}</>;
 }
@@ -111,17 +137,21 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner position="top-right" richColors />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner position="top-right" richColors />
+        <BrowserRouter>
+          <GlobalUnhandledRejectionHandler>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </GlobalUnhandledRejectionHandler>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

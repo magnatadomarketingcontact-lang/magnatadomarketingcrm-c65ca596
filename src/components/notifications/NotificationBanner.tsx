@@ -12,15 +12,12 @@ interface Notification {
   triggeredAt: string;
 }
 
-// Horários de notificação (HH:MM)
 const NOTIFICATION_TIMES = ['08:00', '09:30', '13:00', '15:00', '16:00', '19:00'];
 
-// Função para tocar som de alerta usando Web Audio API
 const playAlertSound = () => {
   try {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
-    // Sequência de beeps para chamar atenção
     const playBeep = (startTime: number, frequency: number, duration: number) => {
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -39,14 +36,11 @@ const playAlertSound = () => {
     };
     
     const now = audioContext.currentTime;
-    
-    // 3 beeps crescentes
-    playBeep(now, 523.25, 0.15);        // Dó
-    playBeep(now + 0.2, 659.25, 0.15);  // Mi
-    playBeep(now + 0.4, 783.99, 0.25);  // Sol
-    
-  } catch (error) {
-    console.log('Áudio não suportado:', error);
+    playBeep(now, 523.25, 0.15);
+    playBeep(now + 0.2, 659.25, 0.15);
+    playBeep(now + 0.4, 783.99, 0.25);
+  } catch {
+    // Audio not supported - silent fallback
   }
 };
 
@@ -57,17 +51,20 @@ export function NotificationBanner() {
   const [showModal, setShowModal] = useState(false);
   const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
   const hasPlayedSound = useRef(false);
+  const soundTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Função para forçar teste de notificação
+  const safePatients = patients ?? [];
+
   const forceTestNotification = useCallback(() => {
     const now = new Date();
     const tomorrow = addDays(startOfDay(now), 1);
     
-    // Busca pacientes com consulta para amanhã
-    const upcomingAppointments = patients.filter(patient => {
-      if (patient.status !== 'agendado') return false;
-      const appointmentDate = startOfDay(parseISO(patient.appointmentDate));
-      return isEqual(appointmentDate, tomorrow);
+    const upcomingAppointments = safePatients.filter(patient => {
+      if (!patient || patient.status !== 'agendado') return false;
+      try {
+        const appointmentDate = startOfDay(parseISO(patient.appointmentDate ?? ''));
+        return isEqual(appointmentDate, tomorrow);
+      } catch { return false; }
     });
 
     if (upcomingAppointments.length === 0) {
@@ -82,10 +79,10 @@ export function NotificationBanner() {
     }));
 
     setNotifications(testNotifications);
-    setCurrentNotification(testNotifications[0]);
+    setCurrentNotification(testNotifications[0] ?? null);
     setShowModal(true);
     playAlertSound();
-  }, [patients]);
+  }, [safePatients]);
 
   const checkNotifications = useCallback(() => {
     const now = new Date();
@@ -93,7 +90,6 @@ export function NotificationBanner() {
     const tomorrow = addDays(today, 1);
     const currentTime = format(now, 'HH:mm');
 
-    // Verifica se é um dos horários de notificação (com margem de 1 minuto)
     const isNotificationTime = NOTIFICATION_TIMES.some(time => {
       const [targetHour, targetMin] = time.split(':').map(Number);
       const [currentHour, currentMin] = currentTime.split(':').map(Number);
@@ -102,50 +98,46 @@ export function NotificationBanner() {
 
     if (!isNotificationTime) return;
 
-    // Busca pacientes com consulta agendada para amanhã
-    const upcomingAppointments = patients.filter(patient => {
-      if (patient.status !== 'agendado') return false;
-      const appointmentDate = startOfDay(parseISO(patient.appointmentDate));
-      return isEqual(appointmentDate, tomorrow);
+    const upcomingAppointments = safePatients.filter(patient => {
+      if (!patient || patient.status !== 'agendado') return false;
+      try {
+        const appointmentDate = startOfDay(parseISO(patient.appointmentDate ?? ''));
+        return isEqual(appointmentDate, tomorrow);
+      } catch { return false; }
     });
 
     if (upcomingAppointments.length === 0) return;
 
-    // Cria notificações para cada paciente
     const newNotifications: Notification[] = upcomingAppointments.map(patient => ({
       id: `${patient.id}-${currentTime}`,
       patient,
       triggeredAt: currentTime,
     }));
 
-    // Filtra notificações já mostradas
     const unseenNotifications = newNotifications.filter(
       n => !dismissed.has(n.id)
     );
 
     if (unseenNotifications.length > 0) {
       setNotifications(unseenNotifications);
-      setCurrentNotification(unseenNotifications[0]);
+      setCurrentNotification(unseenNotifications[0] ?? null);
       setShowModal(true);
       
-      // Toca som de alerta
       if (!hasPlayedSound.current) {
         playAlertSound();
         hasPlayedSound.current = true;
-        // Reset após 2 minutos para permitir som no próximo horário
-        setTimeout(() => { hasPlayedSound.current = false; }, 120000);
+        soundTimeoutRef.current = setTimeout(() => { hasPlayedSound.current = false; }, 120000);
       }
     }
-  }, [patients, dismissed]);
+  }, [safePatients, dismissed]);
 
   useEffect(() => {
-    // Verifica imediatamente ao carregar
     checkNotifications();
-
-    // Verifica a cada 30 segundos
     const interval = setInterval(checkNotifications, 30000);
-
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (soundTimeoutRef.current) clearTimeout(soundTimeoutRef.current);
+    };
   }, [checkNotifications]);
 
   const dismissNotification = (id: string) => {
@@ -153,7 +145,7 @@ export function NotificationBanner() {
     
     const remaining = notifications.filter(n => n.id !== id && !dismissed.has(n.id));
     if (remaining.length > 0) {
-      setCurrentNotification(remaining[0]);
+      setCurrentNotification(remaining[0] ?? null);
     } else {
       setShowModal(false);
       setCurrentNotification(null);
@@ -167,12 +159,17 @@ export function NotificationBanner() {
     setCurrentNotification(null);
   };
 
-  // Notificações no topo (banner menor)
   const visibleBannerNotifications = notifications.filter(n => !dismissed.has(n.id));
+
+  const safeFormatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Data não informada';
+    try {
+      return format(parseISO(dateStr), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    } catch { return dateStr; }
+  };
 
   return (
     <>
-      {/* Botão de Teste (temporário) */}
       {!showModal && (
         <div className="fixed bottom-4 right-4 z-50">
           <button
@@ -185,12 +182,11 @@ export function NotificationBanner() {
         </div>
       )}
 
-      {/* Banner no topo */}
       {visibleBannerNotifications.length > 0 && !showModal && (
         <div className="p-4">
           <button
             onClick={() => {
-              setCurrentNotification(visibleBannerNotifications[0]);
+              setCurrentNotification(visibleBannerNotifications[0] ?? null);
               setShowModal(true);
             }}
             className="w-full flex items-center justify-between gap-4 rounded-lg border-2 border-warning bg-warning/10 px-4 py-3 animate-pulse-soft hover:bg-warning/20 transition-colors"
@@ -208,19 +204,15 @@ export function NotificationBanner() {
         </div>
       )}
 
-      {/* Modal Central */}
       {showModal && currentNotification && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          {/* Overlay */}
           <div 
             className="absolute inset-0 bg-foreground/60 backdrop-blur-sm"
             onClick={dismissAll}
           />
           
-          {/* Modal Content */}
           <div className="relative w-full max-w-lg animate-scale-in">
             <div className="rounded-2xl border-4 border-warning bg-card shadow-2xl overflow-hidden">
-              {/* Header */}
               <div className="bg-warning px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning-foreground/20 animate-pulse">
@@ -243,9 +235,7 @@ export function NotificationBanner() {
                 </button>
               </div>
 
-              {/* Body */}
               <div className="p-6 space-y-4">
-                {/* Paciente */}
                 <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <User className="h-6 w-6 text-primary" />
@@ -253,25 +243,23 @@ export function NotificationBanner() {
                   <div>
                     <p className="text-sm text-muted-foreground">Paciente</p>
                     <p className="text-xl font-bold text-foreground">
-                      {currentNotification.patient.name}
+                      {currentNotification.patient?.name ?? 'Nome não informado'}
                     </p>
                   </div>
                 </div>
 
-                {/* Data */}
                 <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Calendar className="h-6 w-6 text-primary" />
                   </div>
-                   <div>
-                     <p className="text-sm text-muted-foreground">Data da Consulta</p>
-                     <p className="text-xl font-bold text-foreground">
-                       {format(parseISO(currentNotification.patient.appointmentDate), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                     </p>
-                   </div>
-                 </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Data da Consulta</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {safeFormatDate(currentNotification.patient?.appointmentDate)}
+                    </p>
+                  </div>
+                </div>
 
-                {/* Horário */}
                 <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Clock className="h-6 w-6 text-primary" />
@@ -279,12 +267,11 @@ export function NotificationBanner() {
                   <div>
                     <p className="text-sm text-muted-foreground">Horário da Consulta</p>
                     <p className="text-xl font-bold text-foreground">
-                      {currentNotification.patient.appointmentTime || 'Não informado'}
+                      {currentNotification.patient?.appointmentTime || 'Não informado'}
                     </p>
                   </div>
                 </div>
 
-                {/* Procedimentos */}
                 <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Stethoscope className="h-6 w-6 text-primary" />
@@ -292,33 +279,34 @@ export function NotificationBanner() {
                   <div>
                     <p className="text-sm text-muted-foreground">Procedimento(s)</p>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {currentNotification.patient.procedures.map(proc => (
+                      {(currentNotification.patient?.procedures ?? []).map(proc => (
                         <span
                           key={proc}
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary"
                         >
-                          {PROCEDURE_LABELS[proc]}
+                          {PROCEDURE_LABELS[proc] ?? proc}
                         </span>
                       ))}
+                      {(currentNotification.patient?.procedures ?? []).length === 0 && (
+                        <span className="text-sm text-muted-foreground">Nenhum informado</span>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Telefone */}
                 <div className="text-center p-3 rounded-xl bg-primary/5 border border-primary/20">
                   <p className="text-sm text-muted-foreground">Telefone para contato</p>
                   <a
-                    href={`https://wa.me/55${currentNotification.patient.phone.replace(/\D/g, '')}`}
+                    href={`https://wa.me/55${(currentNotification.patient?.phone ?? '').replace(/\D/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-lg font-bold text-primary hover:underline"
                   >
-                    {currentNotification.patient.phone}
+                    {currentNotification.patient?.phone ?? 'Não informado'}
                   </a>
                 </div>
 
-                {/* Observações */}
-                {currentNotification.patient.observations && (
+                {currentNotification.patient?.observations && (
                   <div className="p-3 rounded-xl bg-muted/30 border border-border">
                     <p className="text-sm text-muted-foreground mb-1">Observações</p>
                     <p className="text-foreground">{currentNotification.patient.observations}</p>
@@ -326,13 +314,10 @@ export function NotificationBanner() {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="px-6 py-4 bg-muted/30 border-t border-border flex gap-3">
                 {notifications.filter(n => !dismissed.has(n.id)).length > 1 && (
                   <button
-                    onClick={() => {
-                      dismissNotification(currentNotification.id);
-                    }}
+                    onClick={() => dismissNotification(currentNotification.id)}
                     className="flex-1 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
                   >
                     Próximo ({notifications.filter(n => !dismissed.has(n.id)).length - 1} restante{notifications.filter(n => !dismissed.has(n.id)).length > 2 ? 's' : ''})
@@ -352,7 +337,6 @@ export function NotificationBanner() {
               </div>
             </div>
 
-            {/* Contador */}
             {notifications.filter(n => !dismissed.has(n.id)).length > 1 && (
               <div className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-sm font-bold shadow-lg">
                 {notifications.filter(n => !dismissed.has(n.id)).length}

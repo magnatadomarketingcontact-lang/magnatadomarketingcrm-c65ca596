@@ -4,13 +4,14 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { DashboardCharts } from '@/components/dashboard/DashboardCharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Users, TrendingUp, CheckCircle, Calendar, Filter, FileText } from 'lucide-react';
+import { DollarSign, Users, TrendingUp, CheckCircle, Calendar, Filter, FileText, AlertCircle, RefreshCw } from 'lucide-react';
 import { startOfDay, startOfWeek, startOfMonth, startOfYear, endOfMonth, isAfter, isBefore, parseISO } from 'date-fns';
 import { generatePdfReport } from '@/lib/generatePdfReport';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type PeriodFilter = 'all' | 'day' | 'week' | 'month' | 'year_month';
 
-const YEARS = [2026, 2027, 2028, 2029, 2030];
+const YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 const MONTHS = [
   { value: '01', label: 'Janeiro' },
   { value: '02', label: 'Fevereiro' },
@@ -27,32 +28,38 @@ const MONTHS = [
 ];
 
 export default function Dashboard() {
-  const { patients } = usePatients();
+  const { patients, isLoading, error, refetch } = usePatients();
   const [period, setPeriod] = useState<PeriodFilter>('all');
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
 
   const filteredPatients = useMemo(() => {
+    const safePatients = patients ?? [];
+
     if (period === 'year_month' && selectedYear) {
       const year = parseInt(selectedYear);
       if (selectedMonth && selectedMonth !== 'all_months') {
         const month = parseInt(selectedMonth) - 1;
         const start = new Date(year, month, 1);
         const end = endOfMonth(start);
-        return patients.filter(p => {
-          const date = parseISO(p.createdAt);
-          return isAfter(date, new Date(start.getTime() - 1)) && isBefore(date, new Date(end.getTime() + 1));
+        return safePatients.filter(p => {
+          try {
+            const date = parseISO(p?.createdAt ?? '');
+            return isAfter(date, new Date(start.getTime() - 1)) && isBefore(date, new Date(end.getTime() + 1));
+          } catch { return false; }
         });
       }
       const start = startOfYear(new Date(year, 0, 1));
       const end = new Date(year, 11, 31, 23, 59, 59);
-      return patients.filter(p => {
-        const date = parseISO(p.createdAt);
-        return isAfter(date, new Date(start.getTime() - 1)) && isBefore(date, new Date(end.getTime() + 1));
+      return safePatients.filter(p => {
+        try {
+          const date = parseISO(p?.createdAt ?? '');
+          return isAfter(date, new Date(start.getTime() - 1)) && isBefore(date, new Date(end.getTime() + 1));
+        } catch { return false; }
       });
     }
 
-    if (period === 'all') return patients;
+    if (period === 'all') return safePatients;
 
     const now = new Date();
     let startDate: Date;
@@ -68,18 +75,22 @@ export default function Dashboard() {
         startDate = startOfMonth(now);
         break;
       default:
-        return patients;
+        return safePatients;
     }
 
-    return patients.filter(p => isAfter(parseISO(p.createdAt), startDate));
+    return safePatients.filter(p => {
+      try {
+        return isAfter(parseISO(p?.createdAt ?? ''), startDate);
+      } catch { return false; }
+    });
   }, [patients, period, selectedYear, selectedMonth]);
 
   const stats = useMemo(() => {
-    const closedPatients = filteredPatients.filter(p => p.status === 'fechado');
-    const totalRevenue = closedPatients.reduce((sum, p) => sum + (p.closedValue || 0), 0);
+    const closedPatients = filteredPatients.filter(p => p?.status === 'fechado');
+    const totalRevenue = closedPatients.reduce((sum, p) => sum + (p?.closedValue ?? 0), 0);
     const closedCount = closedPatients.length;
     const averageTicket = closedCount > 0 ? totalRevenue / closedCount : 0;
-    const scheduledCount = filteredPatients.filter(p => p.status === 'agendado').length;
+    const scheduledCount = filteredPatients.filter(p => p?.status === 'agendado').length;
 
     return {
       totalRevenue,
@@ -91,7 +102,7 @@ export default function Dashboard() {
   }, [filteredPatients]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value ?? 0);
   };
 
   const getPeriodLabel = () => {
@@ -102,7 +113,7 @@ export default function Dashboard() {
     if (period === 'year_month') {
       const yearLabel = selectedYear || '';
       const monthLabel = selectedMonth && selectedMonth !== 'all_months'
-        ? MONTHS.find(m => m.value === selectedMonth)?.label || ''
+        ? MONTHS.find(m => m.value === selectedMonth)?.label ?? ''
         : 'Todos os meses';
       return `${monthLabel} / ${yearLabel}`;
     }
@@ -117,6 +128,40 @@ export default function Dashboard() {
       includeObservations: true,
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Skeleton key={i} className="h-32 rounded-lg" />
+          ))}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-80 rounded-lg" />
+          <Skeleton className="h-80 rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <AlertCircle className="h-12 w-12 text-destructive" />
+        <h2 className="text-lg font-semibold text-foreground">Erro ao carregar dados</h2>
+        <p className="text-sm text-muted-foreground max-w-md">{error}</p>
+        <Button onClick={refetch} variant="outline" className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -230,7 +275,7 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Aguardando Atendimento"
-          value={filteredPatients.filter(p => p.status === 'agendado').length}
+          value={filteredPatients.filter(p => p?.status === 'agendado').length}
           icon={Calendar}
         />
       </div>
