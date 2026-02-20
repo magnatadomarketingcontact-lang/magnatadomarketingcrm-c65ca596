@@ -11,7 +11,8 @@ interface DashboardChartsProps {
 const COLORS = ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4'];
 
 export function DashboardCharts({ patients }: DashboardChartsProps) {
-  const closedPatients = patients.filter(p => p.status === 'fechado');
+  const safePatients = patients ?? [];
+  const closedPatients = safePatients.filter(p => p?.status === 'fechado');
 
   const procedureData = useMemo(() => {
     const counts: Record<ProcedureType, { count: number; value: number }> = {
@@ -22,16 +23,19 @@ export function DashboardCharts({ patients }: DashboardChartsProps) {
     };
 
     closedPatients.forEach(patient => {
-      patient.procedures.forEach(proc => {
-        counts[proc].count++;
-        counts[proc].value += (patient.closedValue || 0) / patient.procedures.length;
+      const procs = patient?.procedures ?? [];
+      procs.forEach(proc => {
+        if (counts[proc]) {
+          counts[proc].count++;
+          counts[proc].value += (patient?.closedValue ?? 0) / (procs.length || 1);
+        }
       });
     });
 
     return Object.entries(counts)
       .filter(([_, data]) => data.count > 0)
       .map(([key, data]) => ({
-        name: PROCEDURE_LABELS[key as ProcedureType].replace('Prótese ', ''),
+        name: (PROCEDURE_LABELS[key as ProcedureType] ?? key).replace('Prótese ', ''),
         quantidade: data.count,
         valor: Math.round(data.value),
       }));
@@ -46,27 +50,30 @@ export function DashboardCharts({ patients }: DashboardChartsProps) {
     };
 
     closedPatients.forEach(patient => {
-      counts[patient.mediaOrigin]++;
+      const origin = patient?.mediaOrigin;
+      if (origin && counts[origin] !== undefined) {
+        counts[origin]++;
+      }
     });
 
     return Object.entries(counts)
       .filter(([_, count]) => count > 0)
       .map(([key, count]) => ({
-        name: MEDIA_LABELS[key as MediaOrigin],
+        name: MEDIA_LABELS[key as MediaOrigin] ?? key,
         value: count,
       }));
   }, [closedPatients]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length) {
       return (
         <div className="rounded-lg border border-border bg-card p-3 shadow-lg">
           <p className="font-medium">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm text-muted-foreground">
-              {entry.name}: {entry.name === 'valor' 
-                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(entry.value)
-                : entry.value}
+              {entry?.name}: {entry?.name === 'valor' 
+                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(entry?.value ?? 0)
+                : entry?.value ?? 0}
             </p>
           ))}
         </div>
@@ -77,7 +84,6 @@ export function DashboardCharts({ patients }: DashboardChartsProps) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {/* Procedimentos Chart */}
       <Card className="glass-card animate-fade-in">
         <CardHeader className="border-b border-border/50">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -111,7 +117,6 @@ export function DashboardCharts({ patients }: DashboardChartsProps) {
         </CardContent>
       </Card>
 
-      {/* Mídia Chart */}
       <Card className="glass-card animate-fade-in" style={{ animationDelay: '100ms' }}>
         <CardHeader className="border-b border-border/50">
           <CardTitle className="flex items-center gap-2 text-lg">

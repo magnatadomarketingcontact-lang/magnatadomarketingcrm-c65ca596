@@ -1,74 +1,81 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Patient, PatientStatus, MediaOrigin, ProcedureType } from '@/types/patient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 import { getPatientErrorMessage } from '@/lib/errorUtils';
+
 interface PatientContextType {
   patients: Patient[];
   isLoading: boolean;
+  error: string | null;
   addPatient: (patient: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updatePatient: (id: string, patient: Partial<Patient>) => Promise<void>;
   deletePatient: (id: string) => Promise<void>;
   getPatientById: (id: string) => Patient | undefined;
+  refetch: () => Promise<void>;
 }
 
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
-// Map database row to Patient type
+// Map database row to Patient type with safe access
 const mapDbToPatient = (row: any): Patient => ({
-  id: row.id,
-  name: row.name,
-  phone: row.phone,
-  contactDate: row.contact_date,
-  appointmentDate: row.appointment_date,
-  appointmentTime: row.appointment_time || undefined,
-  status: row.status as PatientStatus,
-  closedValue: row.closed_value ? Number(row.closed_value) : undefined,
-  mediaOrigin: row.media_origin as MediaOrigin,
-  procedures: (row.procedures || []) as ProcedureType[],
-  observations: row.observations || undefined,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
+  id: row?.id ?? '',
+  name: row?.name ?? '',
+  phone: row?.phone ?? '',
+  contactDate: row?.contact_date ?? '',
+  appointmentDate: row?.appointment_date ?? '',
+  appointmentTime: row?.appointment_time ?? undefined,
+  status: (row?.status as PatientStatus) ?? 'agendado',
+  closedValue: row?.closed_value != null ? Number(row.closed_value) : undefined,
+  mediaOrigin: (row?.media_origin as MediaOrigin) ?? 'instagram',
+  procedures: Array.isArray(row?.procedures) ? (row.procedures as ProcedureType[]) : [],
+  observations: row?.observations ?? undefined,
+  createdAt: row?.created_at ?? '',
+  updatedAt: row?.updated_at ?? '',
 });
 
 export function PatientProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // Fetch patients when user changes
+  const fetchPatients = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('patients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      
+      setPatients((data ?? []).map(mapDbToPatient));
+    } catch (err: unknown) {
+      if (import.meta.env.DEV) console.error('[PatientContext] Fetch error:', err);
+      const msg = getPatientErrorMessage(err);
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchPatients();
     } else {
       setPatients([]);
       setIsLoading(false);
+      setError(null);
     }
-  }, [user]);
+  }, [user, fetchPatients]);
 
-  const fetchPatients = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      setPatients((data || []).map(mapDbToPatient));
-    } catch (error: unknown) {
-      if (import.meta.env.DEV) console.error('Error fetching patients:', error);
-      toast.error(getPatientErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const addPatient = async (patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addPatient = useCallback(async (patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user) {
       toast.error('Você precisa estar logado');
       return;
@@ -87,7 +94,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
           status: patientData.status,
           closed_value: patientData.closedValue || null,
           media_origin: patientData.mediaOrigin,
-          procedures: patientData.procedures,
+          procedures: patientData.procedures ?? [],
           observations: patientData.observations || null,
         })
         .select()
@@ -95,23 +102,25 @@ export function PatientProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      setPatients(prev => [mapDbToPatient(data), ...prev]);
+      if (data) {
+        setPatients(prev => [mapDbToPatient(data), ...prev]);
+      }
       toast.success('Paciente adicionado com sucesso!');
-    } catch (error: unknown) {
-      if (import.meta.env.DEV) console.error('Error adding patient:', error);
-      toast.error(getPatientErrorMessage(error));
-      throw error;
+    } catch (err: unknown) {
+      if (import.meta.env.DEV) console.error('[PatientContext] Add error:', err);
+      toast.error(getPatientErrorMessage(err));
+      throw err;
     }
-  };
+  }, [user]);
 
-  const updatePatient = async (id: string, updates: Partial<Patient>) => {
+  const updatePatient = useCallback(async (id: string, updates: Partial<Patient>) => {
     if (!user) {
       toast.error('Você precisa estar logado');
       return;
     }
 
     try {
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.phone !== undefined) updateData.phone = updates.phone;
       if (updates.contactDate !== undefined) updateData.contact_date = updates.contactDate;
@@ -132,18 +141,20 @@ export function PatientProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      setPatients(prev =>
-        prev.map(p => (p.id === id ? mapDbToPatient(data) : p))
-      );
+      if (data) {
+        setPatients(prev =>
+          prev.map(p => (p.id === id ? mapDbToPatient(data) : p))
+        );
+      }
       toast.success('Paciente atualizado com sucesso!');
-    } catch (error: unknown) {
-      if (import.meta.env.DEV) console.error('Error updating patient:', error);
-      toast.error(getPatientErrorMessage(error));
-      throw error;
+    } catch (err: unknown) {
+      if (import.meta.env.DEV) console.error('[PatientContext] Update error:', err);
+      toast.error(getPatientErrorMessage(err));
+      throw err;
     }
-  };
+  }, [user]);
 
-  const deletePatient = async (id: string) => {
+  const deletePatient = useCallback(async (id: string) => {
     if (!user) {
       toast.error('Você precisa estar logado');
       return;
@@ -159,19 +170,19 @@ export function PatientProvider({ children }: { children: ReactNode }) {
 
       setPatients(prev => prev.filter(p => p.id !== id));
       toast.success('Paciente removido com sucesso!');
-    } catch (error: unknown) {
-      if (import.meta.env.DEV) console.error('Error deleting patient:', error);
-      toast.error(getPatientErrorMessage(error));
-      throw error;
+    } catch (err: unknown) {
+      if (import.meta.env.DEV) console.error('[PatientContext] Delete error:', err);
+      toast.error(getPatientErrorMessage(err));
+      throw err;
     }
-  };
+  }, [user]);
 
-  const getPatientById = (id: string) => {
+  const getPatientById = useCallback((id: string) => {
     return patients.find(p => p.id === id);
-  };
+  }, [patients]);
 
   return (
-    <PatientContext.Provider value={{ patients, isLoading, addPatient, updatePatient, deletePatient, getPatientById }}>
+    <PatientContext.Provider value={{ patients, isLoading, error, addPatient, updatePatient, deletePatient, getPatientById, refetch: fetchPatients }}>
       {children}
     </PatientContext.Provider>
   );

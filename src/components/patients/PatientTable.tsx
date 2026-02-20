@@ -35,22 +35,34 @@ export function PatientTable({ patients, title, icon, showFilters = true }: Pati
   const [procedureFilter, setProcedureFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState('');
 
+  const safePatients = patients ?? [];
+
   const filteredPatients = useMemo(() => {
-    return patients.filter(patient => {
-      const matchesSearch = patient.name.toLowerCase().includes(search.toLowerCase()) ||
-        patient.phone.includes(search);
+    return safePatients.filter(patient => {
+      if (!patient) return false;
+      const matchesSearch = (patient.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (patient.phone ?? '').includes(search);
       const matchesStatus = statusFilter === 'all' || patient.status === statusFilter;
       const matchesMedia = mediaFilter === 'all' || patient.mediaOrigin === mediaFilter;
-      const matchesProcedure = procedureFilter === 'all' || patient.procedures.includes(procedureFilter as ProcedureType);
+      const matchesProcedure = procedureFilter === 'all' || (patient.procedures ?? []).includes(procedureFilter as ProcedureType);
       const matchesDate = !dateFilter || patient.appointmentDate === dateFilter;
 
       return matchesSearch && matchesStatus && matchesMedia && matchesProcedure && matchesDate;
     });
-  }, [patients, search, statusFilter, mediaFilter, procedureFilter, dateFilter]);
+  }, [safePatients, search, statusFilter, mediaFilter, procedureFilter, dateFilter]);
 
   const formatCurrency = (value?: number) => {
-    if (!value) return '-';
+    if (value == null) return '-';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  const safeFormatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    try {
+      return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR });
+    } catch {
+      return dateStr;
+    }
   };
 
   return (
@@ -154,26 +166,26 @@ export function PatientTable({ patients, title, icon, showFilters = true }: Pati
               <TableBody>
                 {filteredPatients.map((patient, index) => (
                   <TableRow
-                    key={patient.id}
+                    key={patient?.id ?? index}
                     className="animate-fade-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <TableCell className="font-medium">{patient.name}</TableCell>
+                    <TableCell className="font-medium">{patient?.name ?? '-'}</TableCell>
                     <TableCell>
                       <a
-                        href={`https://wa.me/55${patient.phone.replace(/\D/g, '')}`}
+                        href={`https://wa.me/55${(patient?.phone ?? '').replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-primary hover:underline"
                       >
                         <Phone className="h-3 w-3" />
-                        {patient.phone}
+                        {patient?.phone ?? '-'}
                       </a>
                     </TableCell>
                     <TableCell>
                       <div>
-                        {format(parseISO(patient.appointmentDate), "dd/MM/yyyy", { locale: ptBR })}
-                        {patient.appointmentTime && (
+                        {safeFormatDate(patient?.appointmentDate)}
+                        {patient?.appointmentTime && (
                           <span className="ml-1 text-muted-foreground text-xs">
                             às {patient.appointmentTime}
                           </span>
@@ -181,30 +193,30 @@ export function PatientTable({ patients, title, icon, showFilters = true }: Pati
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn('font-medium', statusColors[patient.status])}>
-                        {STATUS_LABELS[patient.status]}
+                      <Badge variant="outline" className={cn('font-medium', statusColors[patient?.status] ?? '')}>
+                        {STATUS_LABELS[patient?.status] ?? patient?.status ?? '-'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {patient.procedures.map(proc => (
+                        {(patient?.procedures ?? []).map(proc => (
                           <Badge key={proc} variant="secondary" className="text-xs">
-                            {PROCEDURE_LABELS[proc].replace('Prótese ', '')}
+                            {(PROCEDURE_LABELS[proc] ?? proc).replace('Prótese ', '')}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{MEDIA_LABELS[patient.mediaOrigin]}</Badge>
+                      <Badge variant="outline">{MEDIA_LABELS[patient?.mediaOrigin] ?? patient?.mediaOrigin ?? '-'}</Badge>
                     </TableCell>
                     <TableCell className="font-semibold text-success">
-                      {formatCurrency(patient.closedValue)}
+                      {formatCurrency(patient?.closedValue)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/pacientes/${patient.id}`)}
+                        onClick={() => patient?.id && navigate(`/pacientes/${patient.id}`)}
                         className="hover:bg-primary/10 hover:text-primary"
                       >
                         <Edit className="h-4 w-4" />
