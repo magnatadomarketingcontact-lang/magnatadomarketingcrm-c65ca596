@@ -146,7 +146,12 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "user"
-      media_origin: "facebook" | "instagram" | "indicacao" | "guia_campanha"
+      media_origin:
+        | "facebook"
+        | "instagram"
+        | "indicacao"
+        | "guia_campanha"
+        | "claudio"
       patient_status:
         | "agendado"
         | "veio"
@@ -286,7 +291,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "user"],
-      media_origin: ["facebook", "instagram", "indicacao", "guia_campanha"],
+      media_origin: [
+        "facebook",
+        "instagram",
+        "indicacao",
+        "guia_campanha",
+        "claudio",
+      ],
       patient_status: [
         "agendado",
         "veio",

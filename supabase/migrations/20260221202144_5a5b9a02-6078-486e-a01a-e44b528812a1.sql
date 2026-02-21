@@ -1,0 +1,1 @@
+ALTER TYPE public.media_origin ADD VALUE 'claudio';

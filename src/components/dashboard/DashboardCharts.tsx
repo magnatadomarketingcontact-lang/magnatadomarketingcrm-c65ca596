@@ -47,6 +47,7 @@ export function DashboardCharts({ patients }: DashboardChartsProps) {
       instagram: 0,
       indicacao: 0,
       guia_campanha: 0,
+      claudio: 0,
     };
 
     closedPatients.forEach(patient => {

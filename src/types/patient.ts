@@ -9,7 +9,8 @@ export type MediaOrigin =
   | 'facebook' 
   | 'instagram' 
   | 'indicacao' 
-  | 'guia_campanha';
+  | 'guia_campanha'
+  | 'claudio';
 
 export type ProcedureType = 
   | 'protese_flexivel' 
@@ -46,6 +47,7 @@ export const MEDIA_LABELS: Record<MediaOrigin, string> = {
   instagram: 'Instagram',
   indicacao: 'Indicação',
   guia_campanha: 'Guia Campanha',
+  claudio: 'Cláudio',
 };
 
 export const PROCEDURE_LABELS: Record<ProcedureType, string> = {
